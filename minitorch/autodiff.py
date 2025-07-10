@@ -3,6 +3,9 @@ from typing import Any, Iterable, List, Tuple
 
 from typing_extensions import Protocol
 
+import collections
+from typing import Dict, Optional, TypeVar, Union, Iterable, Tuple
+
 # ## Task 1.1
 # Central Difference calculation
 
@@ -22,8 +25,9 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError('Need to implement for Task 1.1')
+    original_value = f(*vals)
+    perturbed_vals = f(*vals[:arg], vals[arg] + epsilon, *vals[arg + 1:])
+    return (perturbed_vals - original_value) / epsilon
 
 
 variable_count = 1
@@ -61,8 +65,24 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    children = collections.defaultdict(set)
+    def dfs(v: Variable) -> Iterable[Variable]:
+        if v.is_constant():
+            return
+        for parent in v.parents:
+            children[parent.unique_id].add(v.unique_id)
+            dfs(parent)
+    dfs(variable)
+    ret = []
+    queue = collections.deque([variable])
+    while queue:
+        current = queue.popleft()
+        ret.append(current)
+        for parent in current.parents:
+            children[parent.unique_id].discard(current.unique_id)
+            if not children[parent.unique_id]:
+                queue.append(parent)
+    return ret
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -76,8 +96,14 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    derivatives = collections.defaultdict(float)
+    derivatives[variable.unique_id] = deriv
+    for v in topological_sort(variable):
+        if v.is_leaf():
+            v.accumulate_derivative(derivatives[v.unique_id])
+            continue
+        for parent, d in v.chain_rule(derivatives[v.unique_id]):
+            derivatives[parent.unique_id] += d
 
 
 @dataclass
