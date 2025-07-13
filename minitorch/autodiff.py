@@ -65,24 +65,17 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    children = collections.defaultdict(set)
-    def dfs(v: Variable) -> Iterable[Variable]:
-        if v.is_constant():
+    visited = set()
+    ret = []
+    def dfs(v: Variable) -> None:
+        if v.is_constant() or v.unique_id in visited:
             return
         for parent in v.parents:
-            children[parent.unique_id].add(v.unique_id)
             dfs(parent)
+        visited.add(v.unique_id)
+        ret.append(v)
     dfs(variable)
-    ret = []
-    queue = collections.deque([variable])
-    while queue:
-        current = queue.popleft()
-        ret.append(current)
-        for parent in current.parents:
-            children[parent.unique_id].discard(current.unique_id)
-            if not children[parent.unique_id]:
-                queue.append(parent)
-    return ret
+    return reversed(ret)
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
