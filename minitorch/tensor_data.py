@@ -43,7 +43,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
     """
 
-    return index @ strides
+    position = 0
+    for x, y in zip(index, strides):
+        position += x * y
+    return position
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -59,9 +62,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    for dim in range(len(shape) - 1, -1, -1):
-        out_index[dim] = ordinal % shape[dim]
-        ordinal //= shape[dim]
+    s = int(ordinal)
+    for i in range(len(shape) - 1, -1, -1):
+        now = shape[i]
+        out_index[i] = int(s % now)
+        s = s // now
 
 
 def broadcast_index(
